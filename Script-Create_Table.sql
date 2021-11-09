@@ -112,7 +112,7 @@ create table pedido_cliente
 	dataPedido date not null,
 	isPlanoMensal bit not null,
 	formaPagamento char(15) not null,
-	desconto smallint not null,
+	desconto smallmoney not null,
 	valorTotal smallmoney not null,
 
 	primary key (id),
