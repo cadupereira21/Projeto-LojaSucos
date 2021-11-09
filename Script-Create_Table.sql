@@ -83,11 +83,11 @@ go
 
 create table suco
 (
-	id smallint not null,
+	id char(10) not null,
 	sabor char(31) not null,
 
 	/* Em litros */
-	tamanho smallint not null,
+	tamanho float not null,
 	valor smallmoney not null,
 
 	primary key (id)
@@ -97,7 +97,7 @@ go
 create table produz
 (
 	idInsumo smallint not null,
-	idSuco smallint not null,
+	idSuco char(10) not null,
 
 	primary key (idInsumo, idSuco),
 	foreign key (idInsumo) references insumo,
@@ -111,8 +111,8 @@ create table pedido_cliente
 	idCliente smallint not null,
 	dataPedido date not null,
 	isPlanoMensal bit not null,
-	formaPagamento char(15) not null,
-	desconto smallmoney not null,
+	formaPagamento char(15) null,
+	desconto smallmoney null,
 	valorTotal smallmoney not null,
 
 	primary key (id),
@@ -123,7 +123,7 @@ go
 create table compor_suco
 (
 	idPedido smallint not null,
-	idSuco smallint not null,
+	idSuco char(10) not null,
 	quantidade smallint not null,
 
 	primary key (idPedido, idSuco),

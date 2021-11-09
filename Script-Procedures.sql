@@ -199,12 +199,33 @@ begin transaction
 go
 
 create procedure CadastrarSuco
-@codigo smallint,
+@codigo char(10),
 @sabor char(31),
-@tamanho smallint,
+@tamanho float,
 @valor smallmoney
 as
 begin transaction
+
+	if @tamanho not in (0.3, 1, 1.5, 5)
+	begin
+		print 'O tamanho de suco não existe!'
+		rollback transaction
+		return -1
+	end
+
+	if @valor not in (6.9, 7.9, 8.9, 10.9, 11.9, 12.9, 15.9, 16.9, 17.9, 34.9, 44.9, 54.9)
+	begin
+			print 'O valor de suco não é compatível!'
+			rollback transaction
+			return -1
+	end
+
+	if @sabor in (select sabor from suco where tamanho = @tamanho)
+	begin
+		print 'O suco já existe neste tamanho!'
+		rollback transaction
+		return -1
+	end
 
 	insert into suco
 	values (@codigo, @sabor, @tamanho, @valor)
@@ -222,23 +243,47 @@ go
 
 create procedure AdicionarSucoAoPedido
 @idPedido smallint,
-@idSuco smallint,
+@idSuco char(10),
 @quantidade smallint
 as
 begin transaction
 
+	/*VERIFICAÇÕES*/
+	if @idPedido not in (select id from pedido_cliente)
+	begin
+		print 'O número de pedido não existe!'
+		rollback transaction
+		return -1
+	end
+
+	if @idSuco not in (select id from suco)
+	begin
+		print 'O suco não existe!'
+		rollback transaction
+		return -1
+	end
+
+	/*VARIÁVEIS*/
 	declare @valor smallmoney;
+	declare @isPlanoMensal bit;
 
-	select @valor = (valor)*@quantidade from suco
-	where id = @idSuco
+	/*caso seja plano mensal, nao adicionaremos nada ao valor total na venda*/
+	select @isPlanoMensal = isPlanoMensal from pedido_cliente where id = @idPedido
+	
+	if @isPlanoMensal = 0 OR @isPlanoMensal = null
+		select @valor = (valor)*@quantidade from suco
+		where id = @idSuco
+	else
+		set @valor = 0
 
+	/*INSERÇÃO NA TABELA + ATUALIZAÇÃO DO PEÇO DA VENDA EM PEDIDO_CLIENTE*/
 	insert into compor_suco
 	values (@idPedido, @idSuco, @quantidade)
 	if @@ROWCOUNT > 0
 	begin
 
 		update pedido_cliente
-		set valorTotal = @valor
+		set valorTotal += @valor - desconto
 		where pedido_cliente.id = @idPedido
 
 		declare @valorPedido smallmoney
@@ -246,7 +291,12 @@ begin transaction
 		select @valorPedido = valorTotal from pedido_cliente
 		where id = @idPedido
 
-		if @valorPedido > 0
+		if @isPlanoMensal = null OR @isPlanoMensal = 0
+		begin
+			commit transaction
+			return 1
+		end
+		else if @valorPedido > 0
 		begin
 			commit transaction
 			return 1
@@ -255,7 +305,6 @@ begin transaction
 		begin
 			rollback transaction
 		end
-
 	end
 	else
 	begin
@@ -265,11 +314,10 @@ begin transaction
 go
 
 create procedure NovoPedidoCliente
-@idCliente smallint = null,
-@dataPedido date,
-@isPlanoMensal bit = null,
-@formaPagamento char(15),
-@desconto smallint = 0
+@idCliente smallint,
+@desconto smallint = 0,
+@isPlanoMensal bit,
+@formaPagamento char(15) = null
 as
 begin transaction
 
@@ -370,11 +418,3 @@ begin transaction
 		return 0
 	end
 go
-
-use LojaSuco
-go
-
-exec CadastrarCliente 'Carlos', '19996060222', 'Avenida Das Flores, 231, Piracicaba-SP', '12345678910'
-exec CadastrarCliente 'Gustavo', '19934566832', 'Avenida Dos Pássaros, 123, Limeira-SP', '01987654321'
-exec CadastrarFornecedor 'Serasa', '1934528788', 'Avenida Rio Das Pedras, 234, Piracicaba-SP', '12345678900015', 'Laranja', 23
-exec CadastrarFornecedor 'Morango', '1934251677', 'Em frente à Dedini', '28378678500019', 'Laranja', 22
