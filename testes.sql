@@ -32,7 +32,7 @@ exec CadastrarSuco '5LMEL', 'Melancia', 'Simples', 5
 exec CadastrarSuco '1LDA', 'Detox de Abacaxi', 'Especial', 1
 exec CadastrarSuco '1LMELGH', 'Melancia com Gengibre e Hortelã', 'Gourmet', 1
 
-
+*/
 /*CADASTRO PEDIDOS*/
 exec NovoPedidoCliente 0, 0, 0, 'Débito'
 exec AdicionarSucoAoPedido 0, '1LL', 1
@@ -41,4 +41,10 @@ exec AdicionarSucoAoPedido 0, '15LMEL', 1
 exec NovoPedidoCliente 2, 0, 1 
 exec AdicionarSucoAoPedido 1, '1LL', 1
 exec AdicionarSucoAoPedido 1, '15LMEL', 1
-*/
+
+exec NovoPedidoCliente 0, 5, 0, 'Crédito'
+exec AdicionarSucoAoPedido 2, '1LL', 1
+
+
+select * from pedido_cliente
+select * from compor_suco

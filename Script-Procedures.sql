@@ -282,6 +282,33 @@ begin transaction
 	end
 go
 
+create procedure AlterarComporSuco
+@idPedido smallint,
+@idSuco char(10),
+@quantidade smallint
+as
+begin transaction
+
+	update compor_suco
+	set quantidade = quantidade+@quantidade
+	where idPedido = @idPedido AND idSuco = @idSuco
+
+	update pedido_cliente
+	set valorTotal = (valorTotal + ((select valor from suco where id=@idSuco)*@quantidade))
+	where id = @idPedido
+
+	if @@ROWCOUNT > 0
+	begin 
+		commit transaction
+		return 1
+	end
+	else
+	begin
+		rollback transaction
+		return 0
+	end
+go
+
 create procedure AdicionarSucoAoPedido
 @idPedido smallint,
 @idSuco char(10),
@@ -290,8 +317,6 @@ as
 begin transaction
 
 	/*VERIFICAÇÕES*/
-
-	/*TODO: Verificar se já há um suco com o código inserido no pedido, se sim, aumentar somente sua quantidade e dar update no valor*/
 
 	if @idPedido not in (select id from pedido_cliente)
 	begin
@@ -357,6 +382,23 @@ begin transaction
 		end
 	end
 
+	/*TODO: Verificar se já há um suco com o código inserido no pedido, se sim, aumentar somente sua quantidade e dar update no valor*/
+	if @idSuco in (select idSuco from compor_suco where idPedido = @idPedido)
+	begin
+		declare @ret int
+		exec @ret = AlterarComporSuco @idPedido, @idSuco, @quantidade
+		if @ret = 1
+		begin
+			commit transaction
+			return @ret
+		end
+		else
+		begin
+			rollback transaction
+			return @ret
+		end
+	end
+
 	/*INSERÇÃO NA TABELA + ATUALIZAÇÃO DO PEÇO DA VENDA EM PEDIDO_CLIENTE*/
 	insert into compor_suco
 	values (@idPedido, @idSuco, @quantidade)
@@ -364,7 +406,7 @@ begin transaction
 	begin
 
 		update pedido_cliente
-		set valorTotal += @valor - desconto
+		set valorTotal = (valorTotal+@valor)
 		where pedido_cliente.id = @idPedido
 
 		declare @valorPedido smallmoney
@@ -411,7 +453,7 @@ begin transaction
 		set @idPedido = 0
 
 	insert into pedido_cliente
-	values (@idPedido, @idCliente, getdate(), @isPlanoMensal, LOWER(@formaPagamento), @desconto, @valorTotal)
+	values (@idPedido, @idCliente, getdate(), @isPlanoMensal, LOWER(@formaPagamento), @desconto, @valorTotal-@desconto)
 	if @@ROWCOUNT > 0
 	begin
 		commit transaction
