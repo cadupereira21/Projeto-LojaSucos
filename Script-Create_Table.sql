@@ -85,7 +85,7 @@ create table suco
 (
 	id char(10) not null,
 	sabor char(31) not null,
-
+	tipo char(8) not null,
 	/* Em litros */
 	tamanho float not null,
 	valor smallmoney not null,
@@ -141,3 +141,30 @@ go
 create index fkeys_pedido_cliente
 on pedido_cliente (idCliente)
 go
+
+/* VIEWS */
+create view dadosClientes
+as
+select pessoa.id, nome, telefone, endereco, cpf, planoMensal from pessoa inner join cliente
+	on pessoa.id = cliente.id
+
+create view dadosFornecedores
+as
+select pessoa.id, nome, telefone, endereco, cnpj from pessoa inner join fornecedor
+	on pessoa.id = fornecedor.id
+
+create view clientesPlanoMensal
+as
+select * from dadosClientes where planoMensal is not null
+
+create view sucosSimples
+as
+select distinct id, sabor from suco where LOWER(tipo) = 'simples'
+
+create view sucosEspeciais
+as
+select distinct id, sabor from suco where LOWER(tipo) = 'especial'
+
+create view sucosGourmet
+as
+select distinct id, sabor from suco where LOWER(tipo) = 'gourmet'

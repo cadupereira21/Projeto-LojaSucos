@@ -34,11 +34,11 @@ begin transaction
 
 	/*INSERINDO NA TABELA*/
 	insert into pessoa
-	values (@codigo, @nome, @telefone, @endereco)
+	values (@codigo, LOWER(@nome), @telefone, LOWER(@endereco))
 	if @@ROWCOUNT > 0
 		begin
 			insert into cliente
-			values (@codigo, @cpf, @planoMensal)
+			values (@codigo, @cpf, LOWER(@planoMensal))
 			if @@ROWCOUNT > 0
 			begin
 				commit transaction
@@ -97,7 +97,7 @@ begin transaction
 			set @idInsumo = 0
 
 		insert into insumo
-		values (@idInsumo, @nome)
+		values (@idInsumo, LOWER(@nome))
 	end
 	else
 		select @idInsumo = (select id from insumo where nome = @nome)
@@ -157,7 +157,7 @@ begin transaction
 		set @codigo = 0
 
 	insert into pessoa
-	values (@codigo, @nome, @telefone, @endereco)
+	values (@codigo, LOWER(@nome), @telefone, LOWER(@endereco))
 	if @@ROWCOUNT > 0
 	begin
 
@@ -201,23 +201,18 @@ go
 create procedure CadastrarSuco
 @codigo char(10),
 @sabor char(31),
-@tamanho float,
-@valor smallmoney
+@tipo char(8),
+@tamanho float
 as
 begin transaction
+
+	declare @valor smallmoney
 
 	if @tamanho not in (0.3, 1, 1.5, 5)
 	begin
 		print 'O tamanho de suco não existe!'
 		rollback transaction
 		return -1
-	end
-
-	if @valor not in (6.9, 7.9, 8.9, 10.9, 11.9, 12.9, 15.9, 16.9, 17.9, 34.9, 44.9, 54.9)
-	begin
-			print 'O valor de suco não é compatível!'
-			rollback transaction
-			return -1
 	end
 
 	if @sabor in (select sabor from suco where tamanho = @tamanho)
@@ -227,8 +222,54 @@ begin transaction
 		return -1
 	end
 
+	if LOWER(@tipo) not in ('simples', 'especial', 'gourmet')
+	begin
+		print 'O tipo de suco não existe!'
+		rollback transaction
+		return -1
+	end
+	else
+	begin
+		if LOWER(@tipo) = 'gourmet'
+		begin
+			if @tamanho = 0.3
+				set @valor = 8.9
+			else if @tamanho = 1
+				set @valor = 13.9
+			else if @tamanho = 1.5
+				set @valor = 17.9
+			else if @tamanho = 5
+				set @valor = 54.9
+		end
+		else
+		begin
+			if LOWER(@tipo) = 'simples'
+			begin
+				if @tamanho = 0.3
+					set @valor = 6.9
+				else if @tamanho = 1
+					set @valor = 11.9
+				else if @tamanho = 1.5
+					set @valor = 15.9
+				else if @tamanho = 5
+					set @valor = 34.9
+			end
+			else
+			begin
+				if @tamanho = 0.3
+					set @valor = 7.9
+				else if @tamanho = 1
+					set @valor = 12.9
+				else if @tamanho = 1.5
+					set @valor = 16.9
+				else if @tamanho = 5
+					set @valor = 44.9
+			end
+		end
+	end
+
 	insert into suco
-	values (@codigo, @sabor, @tamanho, @valor)
+	values (UPPER(@codigo), LOWER(@sabor), LOWER(@tipo), @tamanho, @valor)
 	if @@ROWCOUNT > 0
 	begin
 		commit transaction
@@ -249,6 +290,9 @@ as
 begin transaction
 
 	/*VERIFICAÇÕES*/
+
+	/*TODO: Verificar se já há um suco com o código inserido no pedido, se sim, aumentar somente sua quantidade e dar update no valor*/
+
 	if @idPedido not in (select id from pedido_cliente)
 	begin
 		print 'O número de pedido não existe!'
@@ -266,6 +310,7 @@ begin transaction
 	/*VARIÁVEIS*/
 	declare @valor smallmoney;
 	declare @isPlanoMensal bit;
+	declare @tipoPlano char(8) = null;
 
 	/*caso seja plano mensal, nao adicionaremos nada ao valor total na venda*/
 	select @isPlanoMensal = isPlanoMensal from pedido_cliente where id = @idPedido
@@ -274,7 +319,43 @@ begin transaction
 		select @valor = (valor)*@quantidade from suco
 		where id = @idSuco
 	else
+	begin
+		declare @quantidadeTotalDoPedido smallint = 0;
+		select @quantidadeTotalDoPedido = SUM(quantidade) from compor_suco where idPedido = @idPedido
+		print @quantidadeTotalDoPedido
+
+		if @quantidadeTotalDoPedido+@quantidade > 2
+		begin
+			print 'Você não pode adicionar mais do que 2 sucos à um pedido de plano mensal!'
+			rollback transaction
+			return -1
+		end
+
 		set @valor = 0
+
+		select @tipoPlano = planoMensal from cliente 
+		where cliente.id = (select idCliente from pedido_cliente 
+							where id = @idPedido)
+
+		if @tipoPlano = 'simples'
+		begin
+			if @idSuco not in (select id from sucosSimples)
+			begin
+				print 'Você só pode adicionar pedidos simples à esse pedido!'
+				rollback transaction
+				return -1
+			end
+		end
+		else if @tipoPlano = 'especial'
+		begin
+			if @idSuco in (select id from sucosGourmet)
+			begin
+				print 'Você só pode adicionar pedidos simples ou especiais à esse pedido!'
+				rollback transaction
+				return -1
+			end
+		end
+	end
 
 	/*INSERÇÃO NA TABELA + ATUALIZAÇÃO DO PEÇO DA VENDA EM PEDIDO_CLIENTE*/
 	insert into compor_suco
@@ -296,7 +377,7 @@ begin transaction
 			commit transaction
 			return 1
 		end
-		else if @valorPedido > 0
+		else if @valorPedido = 0
 		begin
 			commit transaction
 			return 1
@@ -330,7 +411,7 @@ begin transaction
 		set @idPedido = 0
 
 	insert into pedido_cliente
-	values (@idPedido, @idCliente, getdate(), @isPlanoMensal, @formaPagamento, @desconto, @valorTotal)
+	values (@idPedido, @idCliente, getdate(), @isPlanoMensal, LOWER(@formaPagamento), @desconto, @valorTotal)
 	if @@ROWCOUNT > 0
 	begin
 		commit transaction
