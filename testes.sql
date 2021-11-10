@@ -32,8 +32,8 @@ exec CadastrarSuco '5LMEL', 'Melancia', 'Simples', 5
 exec CadastrarSuco '1LDA', 'Detox de Abacaxi', 'Especial', 1
 exec CadastrarSuco '1LMELGH', 'Melancia com Gengibre e Hortelã', 'Gourmet', 1
 
-*/
-/*CADASTRO PEDIDOS*/
+
+/*CADASTRO PEDIDOS DE CLIENTES*/
 exec NovoPedidoCliente 0, 0, 0, 'Débito'
 exec AdicionarSucoAoPedido 0, '1LL', 1
 exec AdicionarSucoAoPedido 0, '15LMEL', 1
@@ -44,7 +44,16 @@ exec AdicionarSucoAoPedido 1, '15LMEL', 1
 
 exec NovoPedidoCliente 0, 5, 0, 'Crédito'
 exec AdicionarSucoAoPedido 2, '1LL', 1
+*/
 
+/*CADASTRO DE PEDIDOS DE FORNECEDOR*/
+exec NovoPedidoFornecedor 4, 0, 1
+exec NovoPedidoFornecedor 0, 0, 1 /*fornecedor não existe*/
+exec NovoPedidoFornecedor 4, 5, 1 /*insumo não existe*/
+exec NovoPedidoFornecedor 4, 0, -1 /*quantidade não valida*/
+exec NovoPedidoFornecedor 4, 2, 1 /*fornecedor não fornece*/
+*/
 
-select * from pedido_cliente
-select * from compor_suco
+select * from item_fornecimento
+select * from compor_insumo
+select * from pedido_fornecedor

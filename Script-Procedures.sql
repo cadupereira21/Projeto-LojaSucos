@@ -10,7 +10,49 @@ create procedure CadastrarCliente
 as
 begin transaction
 
-	/*VERIFICAÇÕES*/
+/*	VARIÁVEIS A SEREM USADAS --------------------------------------------------------------- */
+	declare @codigo smallint;
+	select @codigo = max(id)+1 from pessoa
+/* ---------------------------------------------------------------------------- */
+
+/*	VERIFICAÇÕES --------------------------------------------------------------- */
+	if @nome = ''
+	begin
+		print 'O nome não pode ser uma string vazia!'
+		rollback transaction
+		return -1
+	end
+
+	if LEN(@telefone) not in (10, 11)
+	begin
+		print 'O telefone deve possuir 10 ou 11 caracteres!'
+		rollback transaction
+		return -1
+	end
+
+	if @endereco = ''
+	begin
+		print 'O endereço não pode ser uma string vazia!'
+		rollback transaction
+		return -1
+
+	end
+
+	if @endereco in (select endereco from pessoa)
+	begin
+		print 'Este endereço
+ já está cadastrado no sistema!'
+		rollback transaction
+		return -1
+	end
+
+	if @cpf = ''
+	begin
+		print 'O cpf não pode ser uma string vazia!'
+		rollback transaction
+		return -1
+	end
+
 	if @cpf in (select cpf from cliente)
 	begin
 		print 'Este CPF já está cadastrado no sistema!'
@@ -25,14 +67,18 @@ begin transaction
 		return -1
 	end
 
-	/*OBTENDO NOVO ID*/
-	declare @codigo smallint;
-	select @codigo = max(id)+1 from pessoa
+	if LOWER(@planoMensal) not in ('simples', 'especial', 'gourmet')
+	begin
+		print 'Plano mensal inválido! Escolha entre Simples, Especial ou Gourmet!'
+		rollback transaction
+		return -1
+	end
 
 	if @codigo is null
 		set @codigo = 0
+/* ---------------------------------------------------------------------------- */
 
-	/*INSERINDO NA TABELA*/
+/*	OPERAÇÕES --------------------------------------------------------------- */
 	insert into pessoa
 	values (@codigo, LOWER(@nome), @telefone, LOWER(@endereco))
 	if @@ROWCOUNT > 0
@@ -64,7 +110,23 @@ create procedure CadastrarInsumo
 as
 begin transaction
 
-	/*VERIFICAÇÕES*/
+/*	VARIÁVEIS A SEREM USADAS --------------------------------------------------------------- */
+
+	declare @idInsumo smallint
+	declare @idItemFornecimento smallint
+
+	select @idItemFornecimento = max(id)+1 from item_fornecimento
+
+/* ----------------------------------------------------------------------------------------- */
+
+/*	VERIFICAÇÕES --------------------------------------------------------------- */
+	if @nome = ''
+	begin
+		print'O nome não pode ser uma string vazia!'
+		rollback transaction
+		return -1
+	end
+
 	if @valor < 0
 	begin
 		print 'Valor não pode ser menor que 0!'
@@ -79,22 +141,18 @@ begin transaction
 		return -1
 	end
 
-	/*OBTENDO IDs*/
-	declare @idInsumo smallint
-	declare @idItemFornecimento smallint
-
-	select @idItemFornecimento = max(id)+1 from item_fornecimento
-
 	if @idItemFornecimento is null
 		set @idItemFornecimento = 0
 
-	/*para obter o id do insumo, verificamos se ele já existe na tabela*/
-	if @nome not in (select nome from insumo)
+	if @idInsumo is null
+		set @idInsumo = 0
+
+/* ----------------------------------------------------------------------------------------- */
+
+/*	OPERAÇÕES --------------------------------------------------------------- */
+	if LOWER(@nome) not in (select nome from insumo)
 	begin
 		select @idInsumo = max(id)+1 from insumo
-
-		if @idInsumo is null
-			set @idInsumo = 0
 
 		insert into insumo
 		values (@idInsumo, LOWER(@nome))
@@ -124,7 +182,6 @@ begin transaction
 	end
 go
 
-
 create procedure CadastrarFornecedor
 @nome char(15),
 @telefone char(11),
@@ -135,7 +192,49 @@ create procedure CadastrarFornecedor
 as
 begin transaction
 
-	/*TODO: Checar se há cnpj ou telefone repetido*/
+/* VARIÁVEIS --------------------------------------------------------- */
+
+	declare @codigo smallint;
+	select @codigo = max(id)+1 from pessoa
+
+/* VERIFICAÇÕES --------------------------------------------------------- */
+
+	if @nome = ''
+	begin
+		print 'O nome não pode ser uma string vazia!'
+		rollback transaction
+		return -1
+	end
+
+	if LEN(@telefone) not in (10, 11)
+	begin
+		print 'O telefone deve possuir 10 ou 11 caracteres!'
+		rollback transaction
+		return -1
+	end
+
+	if @endereco = ''
+	begin
+		print 'O endereço não pode ser uma string vazia!'
+		rollback transaction
+		return -1
+
+	end
+
+	if @endereco in (select endereco from pessoa)
+	begin
+		print 'Este endereço já está cadastrado no sistema!'
+		rollback transaction
+		return -1
+	end
+
+	if @cnpj = ''
+	begin
+		print 'O cnpj não pode ser string uma vazia!'
+		rollback transaction
+		return -1
+	end
+
 	if @cnpj in (select cnpj from fornecedor)
 	begin
 		print 'Este CNPJ já existe no sistema!'
@@ -150,12 +249,10 @@ begin transaction
 		return -1
 	end
 
-	declare @codigo smallint;
-	select @codigo = max(id)+1 from pessoa
-
 	if @codigo is null
 		set @codigo = 0
 
+/* OPERAÇÕES --------------------------------------------------------- */
 	insert into pessoa
 	values (@codigo, LOWER(@nome), @telefone, LOWER(@endereco))
 	if @@ROWCOUNT > 0
@@ -206,7 +303,18 @@ create procedure CadastrarSuco
 as
 begin transaction
 
+/* VARIÁVEIS ------------------------------------------------------------------- */
+
 	declare @valor smallmoney
+
+/* VERIFICAÇÕES ---------------------------------------------------------------- */
+
+	if @codigo not in ('1', '3', '5')
+	begin
+		print 'O codigo é invalido!'
+		rollback transaction
+		return -1
+	end
 
 	if @tamanho not in (0.3, 1, 1.5, 5)
 	begin
@@ -215,7 +323,7 @@ begin transaction
 		return -1
 	end
 
-	if @sabor in (select sabor from suco where tamanho = @tamanho)
+	if LOWER(@sabor) in (select sabor from suco where tamanho = @tamanho)
 	begin
 		print 'O suco já existe neste tamanho!'
 		rollback transaction
@@ -266,7 +374,9 @@ begin transaction
 					set @valor = 44.9
 			end
 		end
-	end
+	end /* verificação automatiza o valor conforme o tamanho também! */
+
+/* OPERAÇÕES -------------------------------------------------------------------- */
 
 	insert into suco
 	values (UPPER(@codigo), LOWER(@sabor), LOWER(@tipo), @tamanho, @valor)
@@ -316,8 +426,13 @@ create procedure AdicionarSucoAoPedido
 as
 begin transaction
 
-	/*VERIFICAÇÕES*/
+/* VARIAVEIS ---------------------------------------------------------------- */
 
+	declare @valor smallmoney;
+	declare @isPlanoMensal bit;
+	declare @tipoPlano char(8) = null;
+
+/* VERIFICAÇÕES ---------------------------------------------------------------- */
 	if @idPedido not in (select id from pedido_cliente)
 	begin
 		print 'O número de pedido não existe!'
@@ -332,11 +447,14 @@ begin transaction
 		return -1
 	end
 
-	/*VARIÁVEIS*/
-	declare @valor smallmoney;
-	declare @isPlanoMensal bit;
-	declare @tipoPlano char(8) = null;
+	if @quantidade < 0
+	begin
+		print 'Quantidade não pode ser negativa!'
+		rollback transaction
+		return -1
+	end
 
+/* OPERAÇÕES -------------------------------------------------------------------------------------------- */
 	/*caso seja plano mensal, nao adicionaremos nada ao valor total na venda*/
 	select @isPlanoMensal = isPlanoMensal from pedido_cliente where id = @idPedido
 	
@@ -382,7 +500,7 @@ begin transaction
 		end
 	end
 
-	/*TODO: Verificar se já há um suco com o código inserido no pedido, se sim, aumentar somente sua quantidade e dar update no valor*/
+	/*Verifica se já há um suco com o código inserido no pedido, se sim, aumentar somente sua quantidade e dar update no valor*/
 	if @idSuco in (select idSuco from compor_suco where idPedido = @idPedido)
 	begin
 		declare @ret int
@@ -444,14 +562,30 @@ create procedure NovoPedidoCliente
 as
 begin transaction
 
+/* VARIÁVEIS ----------------------------------------------------------------------------- */
 	declare @idPedido smallint
 	declare @valorTotal smallmoney = 0
-
 	select @idPedido = max(id)+1 from pedido_cliente
+
+/* VERIFICAÇÕES ----------------------------------------------------------------------------- */
+	if @idCliente not in (select id from cliente)
+	begin
+		print 'O Id do cliente não existe!'
+		rollback transaction
+		return -1
+	end
+
+	if LOWER(@formaPagamento) not in ('debito', 'credito', 'dinheiro', 'transferencia')
+	begin
+		print 'A forma de pagamento deve ser uma das seguintes: Débito, Crédito, Dinheiro ou Transferência'
+		rollback transaction
+		return -1
+	end
 
 	if @idPedido is null
 		set @idPedido = 0
 
+/* OPERAÇÕES ----------------------------------------------------------------------------- */
 	insert into pedido_cliente
 	values (@idPedido, @idCliente, getdate(), @isPlanoMensal, LOWER(@formaPagamento), @desconto, @valorTotal-@desconto)
 	if @@ROWCOUNT > 0
@@ -466,74 +600,69 @@ begin transaction
 	end
 go
 
-create procedure AdicionarInsumoAoPedido
-@idPedido smallint,
-@idItemFornecimento smallint,
+create procedure NovoPedidoFornecedor
+@idFornecedor smallint,
+@idInsumo smallint,
 @quantidade smallint
 as
 begin transaction
 
-	declare @valor smallmoney;
-
-	select @valor = (valor)*@quantidade from item_fornecimento
-	where id = @idItemFornecimento
-
-	insert into compor_suco
-	values (@idPedido, @idItemFornecimento, @quantidade)
-	if @@ROWCOUNT > 0
-	begin
-
-		update pedido_fornecedor
-		set valorTotal = @valor
-		where pedido_fornecedor.id = @idPedido
-
-		declare @valorPedido smallmoney
-
-		select @valorPedido = valorTotal from pedido_fornecedor
-		where id = @idPedido
-
-		if @valorPedido > 0
-		begin
-			commit transaction
-			return 1
-		end
-		else
-		begin
-			rollback transaction
-		end
-
-	end
-	else
-	begin
-		rollback transaction
-		return 0
-	end
-go
-
-create procedure NovoPedidoFornecedor
-@idItemFornecimento smallint,
-@quantidade smallint,
-@dataPedido date
-as
-begin transaction
-
+/* VARIÁVEIS ------------------------------------------------------ */
 	declare @idPedido smallint
 	declare @valorTotal smallmoney = 0
 
 	select @idPedido = max(id)+1 from pedido_fornecedor
 
+	select @valorTotal = valor*@quantidade from item_fornecimento
+	where idInsumo = @idInsumo AND idFornecedor = @idFornecedor
+
+/* VERIFICAÇÕES ------------------------------------------------------ */
+	if @idFornecedor not in (select id from fornecedor)
+	begin
+		print 'O fornecedor não existe!'
+		rollback transaction
+		return -1
+	end
+
+	if @idInsumo not in (select id from insumo)
+	begin
+		print 'O item solicitado não existe!'
+	end
+
+	if @idInsumo not in (select idInsumo from item_fornecimento where idFornecedor = @idFornecedor)
+	begin
+		print 'Este fornecedor não fornece o item desejado!'
+		rollback transaction
+		return -1
+	end
+
+	if @quantidade < 0
+	begin
+		print 'A quantidade não pode ser negativa!'
+		rollback transaction
+		return -1
+	end
+
 	if @idPedido is null
 		set @idPedido = 0
 
-	select @valorTotal = valor*@quantidade from item_fornecimento
-	where id = @idItemFornecimento
-
+/* OPERAÇÕES ------------------------------------------------------ */
 	insert into pedido_fornecedor
 	values (@idPedido, getdate(), @valorTotal)
 	if @@ROWCOUNT > 0
 	begin
-		commit transaction
+		insert into compor_insumo
+		values (@idPedido, (select id from item_fornecimento where idInsumo = @idInsumo AND idFornecedor = @idFornecedor), @quantidade)
+		if @@ROWCOUNT > 0
+		begin
+			commit transaction
 		return 1
+		end
+		else
+		begin
+			rollback transaction
+			return 0
+		end
 	end
 	else
 	begin
