@@ -154,6 +154,9 @@ begin transaction
 	begin
 		select @idInsumo = max(id)+1 from insumo
 
+		if @idInsumo is null
+			set @idInsumo = 0
+
 		insert into insumo
 		values (@idInsumo, LOWER(@nome))
 	end
@@ -295,7 +298,7 @@ begin transaction
 	end
 go
 
-create procedure CadastrarSuco
+alter procedure CadastrarSuco
 @codigo char(10),
 @sabor char(31),
 @tipo char(8),
@@ -308,8 +311,7 @@ begin transaction
 	declare @valor smallmoney
 
 /* VERIFICAÇÕES ---------------------------------------------------------------- */
-
-	if @codigo not in ('1', '3', '5')
+	if SUBSTRING(@codigo, 0, 2) not in ('1', '3', '5')
 	begin
 		print 'O codigo é invalido!'
 		rollback transaction
