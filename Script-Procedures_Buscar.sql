@@ -1,7 +1,7 @@
 use LojaSuco
 go
 
-alter procedure BuscarCliente
+create procedure BuscarCliente
 @id smallint = null,
 @nome char(25) = null,
 @telefone char(11) = null,

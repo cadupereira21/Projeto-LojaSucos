@@ -14,3 +14,16 @@ begin transaction
 	else
 		rollback transaction
 go
+
+create trigger excluir_fornecedor
+on fornecedor for delete
+as
+begin transaction
+	delete from pessoa
+	where id in (select id from deleted)
+
+	if @@ROWCOUNT > 0
+		commit transaction
+	else
+		rollback transaction
+go

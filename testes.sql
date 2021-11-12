@@ -1,7 +1,7 @@
 use LojaSuco
 go
 
-/*
+
  /*CADASTRO DE CLIENTES*/
 exec CadastrarCliente 'Carlos', '19996060222', 'Avenida A, 123, Piracicaba-SP', '12345678910'
 exec CadastrarCliente 'Gustavo', '19998675647', 'Avenida B, 321, Limeira-SP', '10987654321'
@@ -33,7 +33,7 @@ exec CadastrarSuco '1LMELGH', 'Melancia com Gengibre e Hortelã', 'Gourmet', 1
 
 
 /*CADASTRO PEDIDOS DE CLIENTES*/
-exec NovoPedidoCliente 0, 0, 0, 'Débito'
+exec NovoPedidoCliente 0, 0, 0, 'Debito'
 exec AdicionarSucoAoPedido 0, '1LL', 1
 exec AdicionarSucoAoPedido 0, '15LMEL', 1
 
@@ -41,9 +41,8 @@ exec NovoPedidoCliente 2, 0, 1
 exec AdicionarSucoAoPedido 1, '1LL', 1
 exec AdicionarSucoAoPedido 1, '15LMEL', 1
 
-exec NovoPedidoCliente 0, 5, 0, 'Crédito'
+exec NovoPedidoCliente 0, 5, 0, 'Credito'
 exec AdicionarSucoAoPedido 2, '1LL', 1
-
 
 /*CADASTRO DE PEDIDOS DE FORNECEDOR*/
 exec NovoPedidoFornecedor 4, 0, 1
@@ -53,7 +52,6 @@ exec NovoPedidoFornecedor 4, 0, -1 /*quantidade não valida*/
 exec NovoPedidoFornecedor 4, 2, 1 /*fornecedor não fornece*/
 
 /*BUSCAR CLIENTE*/
-select * from dadosClientes
 EXEC BuscarCliente @id = 0
 EXEC BuscarCliente @id = -1 /*ID inexistente*/
 EXEC BuscarCliente @nome = 'CARLOS' 
@@ -68,7 +66,6 @@ EXEC BuscarCliente /*clientes sem plano*/
 
 
 /*BUSCAR FORNECEDORES*/
-select * from dadosFornecedores
 Exec BuscarFornecedor @id = 4
 Exec BuscarFornecedor @id = 6 /*ID nao existe*/
 Exec BuscarFornecedor @nome = 'serasa'
@@ -89,10 +86,8 @@ Exec BuscarItemFornecimento @nomeFornecedor = 'Serasa'
 Exec BuscarItemFornecimento @nomeFornecedor = 'monica' /*nomeFornecedor nao existe*/
 Exec BuscarItemFornecimento @valor = 3.9
 Exec BuscarItemFornecimento @valor = 100 /*valor nao existe*/
-*/
 
-/*
-/*EXCLUSAO DE CLIENTE*/
-exec ExcluirCliente
-*/
 
+/*EXCLUSAO DE FORNECEDOR*/
+exec ExcluirFornecedor @id = 4
+exec ExcluirFornecedor @id = -1 /*Id nao existe*/

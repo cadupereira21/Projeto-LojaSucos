@@ -169,7 +169,7 @@ create view sucosGourmet
 as
 select distinct id, sabor from suco where LOWER(tipo) = 'gourmet'
 
-alter view itemFornecimento
+create view itemFornecimento
 as
 select item_fornecimento.id, idInsumo, insumo.nome as 'nomeProduto', idFornecedor, dadosFornecedores.nome as 'nomeFornecedor', dadosFornecedores.cnpj, valor from item_fornecimento inner join insumo
 	on item_fornecimento.idInsumo = insumo.id

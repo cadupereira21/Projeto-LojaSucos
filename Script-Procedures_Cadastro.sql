@@ -298,7 +298,7 @@ begin transaction
 	end
 go
 
-alter procedure CadastrarSuco
+create procedure CadastrarSuco
 @codigo char(10),
 @sabor char(31),
 @tipo char(8),
